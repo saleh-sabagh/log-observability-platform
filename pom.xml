@@ -17,9 +17,10 @@
 
     <modules>
         <module>shared</module>
+        <!--
         <module>file-ingestor</module>
         <module>rules-evaluator</module>
-        <module>shared</module>
+        -->
     </modules>
 
     <properties>
