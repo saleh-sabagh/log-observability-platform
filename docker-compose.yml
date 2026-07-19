@@ -1,0 +1,121 @@
+services:
+
+  kafka:
+    image: bitnami/kafka:3.9
+    container_name: kafka
+    restart: unless-stopped
+
+    ports:
+      - "9092:9092"
+
+    environment:
+      # ----------------------------
+      # KRaft (Single Node)
+      # ----------------------------
+      KAFKA_ENABLE_KRAFT: "yes"
+
+      KAFKA_CFG_NODE_ID: "1"
+
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+
+      KAFKA_KRAFT_CLUSTER_ID: "abcdefghijklmnopqrstuv"
+
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+      # ----------------------------
+      # Kafka Defaults
+      # ----------------------------
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+      KAFKA_CFG_NUM_PARTITIONS: "1"
+
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
+
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+
+      # ----------------------------
+      # JVM
+      # ----------------------------
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      TZ: UTC
+
+    volumes:
+      - kafka-data:/bitnami/kafka
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh",
+          "--bootstrap-server",
+          "localhost:9092"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - log-monitor-network
+
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    restart: unless-stopped
+
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_DB: log_monitor
+      POSTGRES_USER: log_monitor_user
+      POSTGRES_PASSWORD: log_monitor_password
+
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+
+      TZ: UTC
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U log_monitor_user -d log_monitor"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - log-monitor-network
+
+
+volumes:
+  kafka-data:
+  postgres-data:
+
+
+networks:
+  log-monitor-network:
+    driver: bridge
