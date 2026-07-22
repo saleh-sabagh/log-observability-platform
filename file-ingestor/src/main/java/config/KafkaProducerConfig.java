@@ -6,19 +6,23 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import serializer.LogEventSerializer;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
 public class KafkaProducerConfig {
+    private final Properties properties;
+
+    public KafkaProducerConfig(Properties properties) {
+        this.properties = Objects.requireNonNull(properties, "properties cannot be null");
+    }
+
 
     public KafkaProducer<String, LogEvent> createProducer() {
-        Properties appProperties = loadApplicationProperties();
 
         Properties producerProperties = new Properties();
         producerProperties.put(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                appProperties.getProperty("kafka.bootstrap.servers")
+                properties.getProperty("kafka.bootstrap.servers")
         );
         producerProperties.put(
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
@@ -38,23 +42,5 @@ public class KafkaProducerConfig {
         );
 
         return new KafkaProducer<>(producerProperties);
-    }
-
-    private Properties loadApplicationProperties() {
-        Properties properties = new Properties();
-
-        try (InputStream inputStream =
-                     getClass().getClassLoader().getResourceAsStream("config.properties")) {
-
-            if (inputStream == null) {
-                throw new IllegalStateException("config.properties not found");
-            }
-
-            properties.load(inputStream);
-            return properties;
-
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load config.properties", e);
-        }
     }
 }

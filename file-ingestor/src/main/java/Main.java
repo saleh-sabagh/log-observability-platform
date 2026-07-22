@@ -30,7 +30,7 @@ public class Main {
             String topic = properties.getProperty("kafka.topic");
 
             KafkaProducer<String, LogEvent> producer =
-                    new KafkaProducerConfig().createProducer();
+                    new KafkaProducerConfig(properties).createProducer();
 
             LogParser parser = new LogParser();
 
