@@ -1,0 +1,32 @@
+[
+  {
+    "ruleName": "Single Error Log Alert",
+    "ruleType": "ERROR",
+    "enabled": true,
+    "component": null,
+    "logLevel": "ERROR",
+    "threshold": 1,
+    "timeWindowSeconds": 0,
+    "maxLastMessages": 1
+  },
+  {
+    "ruleName": "High Warning Rate on Specific Component",
+    "ruleType": "LEVEL_RATE",
+    "enabled": true,
+    "component": null,
+    "logLevel": "WARN",
+    "threshold": 50,
+    "timeWindowSeconds": 300,
+    "maxLastMessages": 2
+  },
+  {
+    "ruleName": "System Overload (Total Logs)",
+    "ruleType": "TOTAL_RATE",
+    "enabled": true,
+    "component": null,
+    "logLevel": null,
+    "threshold": 500,
+    "timeWindowSeconds": 300,
+    "maxLastMessages": 0
+  }
+]
