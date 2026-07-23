@@ -3,13 +3,13 @@ package serializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import model.LogEvent;
 import org.apache.kafka.common.serialization.Deserializer;
-
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 
 public class LogEventDeserializer implements Deserializer<LogEvent> {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
     @Override
     public LogEvent deserialize(String topic, byte[] data) {
 
