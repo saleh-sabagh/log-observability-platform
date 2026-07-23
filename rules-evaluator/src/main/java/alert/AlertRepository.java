@@ -6,5 +6,5 @@ public interface AlertRepository {
 
     void save(Alert alert);
 
-    List<Alert> findAllOrderByCreatedAt();
+    List<Alert> findAllOrderedByCreatedAt();
 }
