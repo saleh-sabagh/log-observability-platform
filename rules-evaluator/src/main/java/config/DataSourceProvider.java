@@ -10,22 +10,21 @@ import java.util.Properties;
 
 public class DataSourceProvider implements AutoCloseable {
 
-    private final Properties properties;
     private final HikariDataSource dataSource;
 
     public DataSourceProvider(Properties properties) {
-        this.properties = Objects.requireNonNull(properties, "properties cannot be null");
-
-        // تنظیمات استخر کانکشن دقیقاً در زمان ساخت آبجکت انجام می‌شود
-        this.dataSource = initializeHikariDataSource();
+        Objects.requireNonNull(properties, "properties cannot be null");
+        this.dataSource = createDataSource(properties);
     }
 
-    private HikariDataSource initializeHikariDataSource() {
-        String host = getRequiredProperty("postgres.host");
-        String port = getRequiredProperty("postgres.port");
-        String database = getRequiredProperty("postgres.database");
-        String username = getRequiredProperty("postgres.username");
-        String password = getRequiredProperty("postgres.password");
+    private HikariDataSource createDataSource(Properties properties) {
+
+        String host = getRequiredProperty(properties, "postgres.host");
+        String port = getRequiredProperty(properties, "postgres.port");
+        String database = getRequiredProperty(properties, "postgres.database");
+        String username = getRequiredProperty(properties, "postgres.username");
+        String password = getRequiredProperty(properties, "postgres.password");
+
 
         String jdbcUrl = String.format(
                 "jdbc:postgresql://%s:%s/%s",
@@ -35,39 +34,76 @@ public class DataSourceProvider implements AutoCloseable {
         );
 
         HikariConfig config = new HikariConfig();
+
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(username);
         config.setPassword(password);
 
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(2);
-        config.setConnectionTimeout(30000);
+        /*
+         * Pool Configuration
+         */
+
+        config.setMaximumPoolSize(
+                getInt(properties, "postgres.pool.max-size", 10)
+        );
+
+        config.setMinimumIdle(
+                getInt(properties, "postgres.pool.min-idle", 2)
+        );
+
+        config.setConnectionTimeout(
+                getLong(properties, "postgres.pool.connection-timeout-ms", 30000)
+        );
+
+        config.setPoolName("rules-evaluator-pool");
 
         return new HikariDataSource(config);
     }
 
     public Connection getConnection() throws SQLException {
-        // این بار به جای ساخت کانکشن جدید، یک کانکشن آماده از استخر دریافت می‌شود
         return dataSource.getConnection();
     }
+
+    private String getRequiredProperty(Properties properties, String key) {
+
 
     private String getRequiredProperty(String key) {
         String value = properties.getProperty(key);
 
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                    "Missing required configuration property: " + key
+                    "Missing configuration property: " + key
             );
         }
 
         return value;
     }
 
+    private int getInt(Properties properties, String key, int defaultValue) {
+
+        String value = properties.getProperty(key);
+
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        return Integer.parseInt(value.trim());
+    }
+
+    private long getLong(Properties properties, String key, long defaultValue) {
+
+        String value = properties.getProperty(key);
+
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        return Long.parseLong(value.trim());
+    }
 
     @Override
     public void close() {
-        if (dataSource != null && !dataSource.isClosed()) {
-            dataSource.close();
-        }
+        dataSource.close();
+
     }
 }
