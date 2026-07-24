@@ -7,6 +7,7 @@ import config.KafkaConsumerConfig;
 import config.RuleConfigLoader;
 import kafka.KafkaLogConsumer;
 import model.LogEvent;
+import config.DatabaseInitializer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import rule.RuleDefinition;
 import rule.RuleEngine;
@@ -30,6 +31,7 @@ public class Main {
             }
 
             DataSourceProvider dataSourceProvider = new DataSourceProvider(properties);
+            DatabaseInitializer.initialize(dataSourceProvider);
             KafkaConsumer<String, LogEvent> rawKafkaConsumer = new KafkaConsumerConfig(properties).createConsumer();
 
             List<RuleDefinition> rules = new RuleConfigLoader().loadRules();
@@ -40,7 +42,7 @@ public class Main {
             RuleEngine ruleEngine = new RuleEngine(rules, alertService);
 
             AlertApi alertApi = new AlertApi(alertService);
-            int apiPort = Integer.parseInt(properties.getProperty("server.port", "8080"));
+            int apiPort = Integer.parseInt(properties.getProperty("server.port", "8081"));
             alertApi.start(apiPort);
 
             String topic = properties.getProperty("kafka.topic", "log-events");

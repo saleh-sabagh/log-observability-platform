@@ -103,25 +103,40 @@ public class FileWatcher {
     }
 
     private void processFile(Path file) {
+        int maxRetries = 3;
+        int delayMillis = 500;
 
-        try {
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                List<LogEvent> events = logParser.parse(file);
 
-            List<LogEvent> events = logParser.parse(file);
+                for (LogEvent event : events) {
+                    logPublisher.publish(event);
+                }
 
-            for (LogEvent event : events) {
-                logPublisher.publish(event);
+                Files.deleteIfExists(file);
+                logger.info("Processed and deleted file {}", file.getFileName());
+
+                return;
+
+            } catch (FileSystemException e) {
+                logger.warn("File {} is locked, attempt {} of {}. Waiting...", file.getFileName(), attempt, maxRetries);
+                sleep(delayMillis);
+            } catch (Exception e) {
+                logger.error("Failed to process file {}", file, e);
+                break;
             }
-
-            Files.deleteIfExists(file);
-
-            logger.info("Processed file {}", file.getFileName());
-
-        } catch (Exception e) {
-
-            logger.error("Failed to process file {}", file, e);
-
         }
 
+        logger.error("Could not process file {} after {} attempts.", file.getFileName(), maxRetries);
+    }
+
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }
