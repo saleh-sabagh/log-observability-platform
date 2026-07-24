@@ -25,6 +25,7 @@ public class DataSourceProvider implements AutoCloseable {
         String username = getRequiredProperty(properties, "postgres.username");
         String password = getRequiredProperty(properties, "postgres.password");
 
+
         String jdbcUrl = String.format(
                 "jdbc:postgresql://%s:%s/%s",
                 host,
@@ -65,6 +66,8 @@ public class DataSourceProvider implements AutoCloseable {
 
     private String getRequiredProperty(Properties properties, String key) {
 
+
+    private String getRequiredProperty(String key) {
         String value = properties.getProperty(key);
 
         if (value == null || value.isBlank()) {
@@ -101,5 +104,6 @@ public class DataSourceProvider implements AutoCloseable {
     @Override
     public void close() {
         dataSource.close();
+
     }
 }
