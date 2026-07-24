@@ -42,7 +42,7 @@ public class Main {
             RuleEngine ruleEngine = new RuleEngine(rules, alertService);
 
             AlertApi alertApi = new AlertApi(alertService);
-            int apiPort = Integer.parseInt(properties.getProperty("server.port", "8080"));
+            int apiPort = Integer.parseInt(properties.getProperty("server.port", "8081"));
             alertApi.start(apiPort);
 
             String topic = properties.getProperty("kafka.topic", "log-events");
