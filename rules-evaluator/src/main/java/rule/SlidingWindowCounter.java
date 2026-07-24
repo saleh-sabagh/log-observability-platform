@@ -52,7 +52,7 @@ public class SlidingWindowCounter {
 
     public int countByLevel(String level) {
 
-        Objects.requireNonNull(level);
+        Objects.requireNonNull(level, "level cannot be null");
 
         return count(event ->
                 level.equalsIgnoreCase(event.getLevel()));

@@ -10,23 +10,23 @@
     "maxLastMessages": 1
   },
   {
-    "ruleName": "High Warning Rate on Specific Component",
+    "ruleName": "High Error Rate (Test)",
     "ruleType": "LEVEL_RATE",
     "enabled": true,
     "component": null,
-    "logLevel": "WARN",
-    "threshold": 50,
+    "logLevel": "ERROR",
+    "threshold": 5,
     "timeWindowSeconds": 300,
     "maxLastMessages": 2
   },
   {
-    "ruleName": "System Overload (Total Logs)",
+    "ruleName": "System Overload (Test)",
     "ruleType": "TOTAL_RATE",
     "enabled": true,
     "component": null,
     "logLevel": null,
-    "threshold": 500,
+    "threshold": 10,
     "timeWindowSeconds": 300,
-    "maxLastMessages": 0
+    "maxLastMessages": 2
   }
 ]

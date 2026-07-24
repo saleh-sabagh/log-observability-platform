@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RuleEngine {
 
@@ -14,31 +15,17 @@ public class RuleEngine {
     private final AlertService alertService;
 
     /**
-     * One sliding window per rate-based rule.
+     * Map key is composed of "RuleName::Component"
+     * to keep separate sliding windows for each component dynamically.
      */
-    private final Map<String, SlidingWindowCounter> counters = new HashMap<>();
-
+    private final Map<String, SlidingWindowCounter> counters =
+            new ConcurrentHashMap<>();
     public RuleEngine(
             List<RuleDefinition> rules,
             AlertService alertService
     ) {
         this.rules = Objects.requireNonNull(rules, "rules cannot be null");
         this.alertService = Objects.requireNonNull(alertService, "alertService cannot be null");
-
-        initializeCounters();
-    }
-
-    private void initializeCounters() {
-
-        for (RuleDefinition rule : rules) {
-
-            if (rule.getRuleType() != RuleType.ERROR) {
-                counters.put(
-                        rule.getRuleName(),
-                        new SlidingWindowCounter(rule.getTimeWindowSeconds())
-                );
-            }
-        }
     }
 
     /**
@@ -97,11 +84,11 @@ public class RuleEngine {
             return;
         }
 
-        SlidingWindowCounter counter = counters.get(rule.getRuleName());
+        SlidingWindowCounter counter = getOrCreateCounter(rule, event.getComponent());
 
         counter.addEvent(event);
 
-        if (counter.count() >= rule.getThreshold()) {
+        if (counter.count() == rule.getThreshold()) {
 
             alertService.createAlert(
                     rule,
@@ -116,11 +103,11 @@ public class RuleEngine {
             LogEvent event
     ) {
 
-        SlidingWindowCounter counter = counters.get(rule.getRuleName());
+        SlidingWindowCounter counter = getOrCreateCounter(rule, event.getComponent());
 
         counter.addEvent(event);
 
-        if (counter.count() >= rule.getThreshold()) {
+        if (counter.count() == rule.getThreshold()) {
 
             alertService.createAlert(
                     rule,
@@ -128,6 +115,19 @@ public class RuleEngine {
                     counter.getLastEvents(rule.getMaxLastMessages())
             );
         }
+    }
+
+    /**
+     * Creates or retrieves a specific SlidingWindowCounter for a Rule + Component combination.
+     */
+    private SlidingWindowCounter getOrCreateCounter(RuleDefinition rule, String component) {
+        // ایجاد کلید ترکیبی: مثلا "System Overload::payment-service"
+        String key = rule.getRuleName() + "::" + (component != null ? component : "unknown");
+
+        return counters.computeIfAbsent(
+                key,
+                k -> new SlidingWindowCounter(rule.getTimeWindowSeconds())
+        );
     }
 
     private boolean matchesComponent(
