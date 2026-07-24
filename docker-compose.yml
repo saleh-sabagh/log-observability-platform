@@ -7,6 +7,7 @@ services:
 
     ports:
       - "9092:9092"
+      - "9094:9094"
 
     environment:
       # ----------------------------
@@ -22,13 +23,13 @@ services:
 
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
 
-      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_LISTENERS: "INTERNAL://:9094,EXTERNAL://:9092,CONTROLLER://:9093"
 
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:9094,EXTERNAL://localhost:9092"
 
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
 
-      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
 
       # ----------------------------
       # Kafka Defaults
@@ -107,6 +108,24 @@ services:
       - log-monitor-network
 
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9094
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    networks:
+      - log-monitor-network
 volumes:
   kafka-data:
   postgres-data:
@@ -115,3 +134,4 @@ volumes:
 networks:
   log-monitor-network:
     driver: bridge
+
