@@ -4,6 +4,7 @@ import model.LogEvent;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -29,7 +30,6 @@ public class LogParser {
 
     private String extractComponent(Path logFile) {
         String fileName = logFile.getFileName().toString();
-
         int index = fileName.indexOf('_');
 
         if (index == -1) {
@@ -41,14 +41,12 @@ public class LogParser {
 
     public List<LogEvent> parse(Path logFile) throws IOException {
         List<LogEvent> events = new ArrayList<>();
-
         String component = extractComponent(logFile);
 
-        try (BufferedReader reader = Files.newBufferedReader(logFile)) {
+        try (BufferedReader reader = Files.newBufferedReader(logFile, StandardCharsets.UTF_8)) {
             String line;
 
             while ((line = reader.readLine()) != null) {
-
                 if (line.isBlank()) {
                     continue;
                 }
@@ -64,14 +62,13 @@ public class LogParser {
         return events;
     }
 
-
     private LogEvent parseLine(String line, String component) {
         Matcher matcher = LOG_PATTERN.matcher(line);
         if (!matcher.matches()) {
             return null;
         }
 
-        String rawTimestamp = matcher.group(1);
+        String rawTimestamp = matcher.group("timestamp");
         String threadName = matcher.group("thread");
         String level = matcher.group("level");
         String className = matcher.group("class");
