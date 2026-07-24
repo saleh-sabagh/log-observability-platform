@@ -14,17 +14,15 @@ public class DataSourceProvider implements AutoCloseable {
 
     public DataSourceProvider(Properties properties) {
         Objects.requireNonNull(properties, "properties cannot be null");
-        this.dataSource = createDataSource(properties);
+        this.dataSource = initializeHikariDataSource(properties);
     }
 
-    private HikariDataSource createDataSource(Properties properties) {
-
+    private HikariDataSource initializeHikariDataSource(Properties properties) {
         String host = getRequiredProperty(properties, "postgres.host");
         String port = getRequiredProperty(properties, "postgres.port");
         String database = getRequiredProperty(properties, "postgres.database");
         String username = getRequiredProperty(properties, "postgres.username");
         String password = getRequiredProperty(properties, "postgres.password");
-
 
         String jdbcUrl = String.format(
                 "jdbc:postgresql://%s:%s/%s",
@@ -34,28 +32,17 @@ public class DataSourceProvider implements AutoCloseable {
         );
 
         HikariConfig config = new HikariConfig();
-
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(username);
         config.setPassword(password);
 
-        /*
-         * Pool Configuration
-         */
+        int maxSize = getIntPropertyOrDefault(properties, "postgres.pool.max-size", 10);
+        int minIdle = getIntPropertyOrDefault(properties, "postgres.pool.min-idle", 2);
+        long timeoutMs = getLongPropertyOrDefault(properties, "postgres.pool.connection-timeout-ms", 30000L);
 
-        config.setMaximumPoolSize(
-                getInt(properties, "postgres.pool.max-size", 10)
-        );
-
-        config.setMinimumIdle(
-                getInt(properties, "postgres.pool.min-idle", 2)
-        );
-
-        config.setConnectionTimeout(
-                getLong(properties, "postgres.pool.connection-timeout-ms", 30000)
-        );
-
-        config.setPoolName("rules-evaluator-pool");
+        config.setMaximumPoolSize(maxSize);
+        config.setMinimumIdle(minIdle);
+        config.setConnectionTimeout(timeoutMs);
 
         return new HikariDataSource(config);
     }
@@ -65,45 +52,43 @@ public class DataSourceProvider implements AutoCloseable {
     }
 
     private String getRequiredProperty(Properties properties, String key) {
-
-
-    private String getRequiredProperty(String key) {
         String value = properties.getProperty(key);
-
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                    "Missing configuration property: " + key
+                    "Missing required configuration property: " + key
             );
         }
-
         return value;
     }
 
-    private int getInt(Properties properties, String key, int defaultValue) {
-
+    private int getIntPropertyOrDefault(Properties properties, String key, int defaultValue) {
         String value = properties.getProperty(key);
-
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-
-        return Integer.parseInt(value.trim());
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid integer configuration for key: " + key, e);
+        }
     }
 
-    private long getLong(Properties properties, String key, long defaultValue) {
-
+    private long getLongPropertyOrDefault(Properties properties, String key, long defaultValue) {
         String value = properties.getProperty(key);
-
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-
-        return Long.parseLong(value.trim());
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid long configuration for key: " + key, e);
+        }
     }
 
     @Override
     public void close() {
-        dataSource.close();
-
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
     }
 }
