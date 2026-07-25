@@ -19,7 +19,7 @@ public class RuleConfigLoader {
      * @return a list of RuleDefinition objects
      */
     public List<RuleDefinition> loadRules() {
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIG_FILE)) {
+        try (InputStream inputStream = openConfigStream()) {
             if (inputStream == null) {
                 throw new IllegalStateException("Configuration file not found in resources: " + DEFAULT_CONFIG_FILE);
             }
@@ -29,5 +29,9 @@ public class RuleConfigLoader {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load or parse rule configuration file: " + DEFAULT_CONFIG_FILE, e);
         }
+    }
+
+    InputStream openConfigStream() {
+        return getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIG_FILE);
     }
 }
